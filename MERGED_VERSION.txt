@@ -1,0 +1,5 @@
+DiscordExperienceAI merged build
+
+Base: DiscordExperienceAI-Full-Implemented.zip
+Fixes: DiscordExperienceAI-全部修正版-v3.zip
+The original data files are preserved; fixed source files overwrite the originals.

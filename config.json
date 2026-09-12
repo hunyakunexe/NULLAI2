@@ -1,0 +1,62 @@
+{
+  "vocab_size": 8000,
+  "n_embd": 192,
+  "n_head": 6,
+  "n_layer": 4,
+  "block_size": 256,
+  "dropout": 0.1,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.01,
+  "batch_size": 8,
+  "gradient_accumulation_steps": 2,
+  "epochs_per_update": 1,
+  "bot": {
+    "auto_reply": true,
+    "reply_only_when_mentioned": true,
+    "max_reply_chars": 1800,
+    "history_messages": 12,
+    "candidate_limit": 16,
+    "observation_delay_seconds": 5,
+    "observation_max_messages": 8,
+    "occasional_reply": true,
+    "occasional_reply_probability": 0.08,
+    "ignored_channel_ids": []
+  },
+  "privacy": {
+    "collect_dms": false,
+    "collect_bot_messages": false,
+    "allowed_channel_ids": [],
+    "denied_channel_ids": []
+  },
+  "experience": {
+    "decay_days": 60,
+    "min_confidence": 0.25,
+    "export_score": 0.45,
+    "export_confidence": 0.65
+  },
+  "quality": {
+    "ignore_repeated_messages": true
+  },
+  "dataset": {
+    "auto_fill": true,
+    "min_corpus_chars": 5000000,
+    "max_new_works_per_start": 20,
+    "download_timeout_seconds": 30,
+    "request_interval_seconds": 0.2
+  },
+  "training": {
+    "auto_train_on_startup": true,
+    "train_every_experiences": 20,
+    "log_every_steps": 100
+  },
+  "inference": {
+    "quantized": true,
+    "max_new_tokens": 50,
+    "temperature": 0.6,
+    "top_k": 30,
+    "repetition_penalty": 1.2,
+    "no_repeat_ngram_size": 3
+  },
+  "chat_sample_repeat": 12,
+  "seed": 42
+}
