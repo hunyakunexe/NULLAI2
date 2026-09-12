@@ -22,7 +22,7 @@ class Bot(discord.Client):
         try:
             tok=SentencePieceTokenizer('data/tokenizer.model')
             ck=torch.load('data/model.pt',map_location='cpu',weights_only=False)
-            if ck.get('model_version') != 3:
+            if ck.get('model_version') != 5:
                 raise RuntimeError('checkpoint model_version is incompatible; startup maintenance will retrain it')
             mc=dict(self.cfg); mc['vocab_size']=tok.vocab_size
             saved=ck.get('model_config',{})
@@ -70,30 +70,37 @@ class Bot(discord.Client):
 
     @staticmethod
     def _clean_reply(text):
-        text=str(text or '').strip()
-        if not text: return ''
-        for marker in ('\nユーザー:', '\nAI:', '\n現在:', '\n返信:', '<|end_document|>', '<|document|>'):
+        import unicodedata
+        text=str(text or "").replace("\x00", "").strip()
+        if not text: return ""
+        # Cut generated prompt/control markers.
+        for marker in ("\nユーザー:", "\nAI:", "\n現在:", "\n返信:", "\n回复:", "<|end_document|>", "<|document|>"):
             if marker in text:
                 text=text.split(marker,1)[0].strip()
-        # Remove long exact character/token cycles. SentencePiece often makes
-        # Japanese words span several tokens, so this is deliberately done
-        # after decoding as well as inside MiniLLM.generate().
+        # Remove Unicode control characters but keep normal Japanese punctuation/newlines.
+        text=''.join(ch for ch in text if unicodedata.category(ch)[0] != 'C' or ch in '\n\t')
+        # Collapse whitespace without destroying Japanese text.
+        text=re.sub(r'[ \t]{2,}', ' ', text)
+        # Character-level runaway repetition: かなり/るるるるる etc.
+        text=re.sub(r'(.)\1{4,}', r'\1\1', text)
+        # Remove repeated suffixes of words/phrases.
         for unit_len in range(1, min(80, len(text)//3)+1):
             unit=text[-unit_len:]
-            repeats=0; pos=len(text)
-            while pos>=unit_len and text[pos-unit_len:pos]==unit:
-                repeats += 1; pos -= unit_len
-            if repeats>=3:
-                text=text[:pos+unit_len].rstrip()
+            if unit and text.endswith(unit*3):
+                text=text[:-unit_len*2].rstrip()
                 break
-        # Whitespace-separated repetition.
         words=text.split()
         for n in range(1, min(16, len(words)//3)+1):
             if words[-n:]==words[-2*n:-n]==words[-3*n:-2*n]:
-                text=' '.join(words[:-2*n]).strip()
-                break
-        # Avoid sending a huge single-line accidental generation.
-        text=text.strip()
+                text=' '.join(words[:-2*n]).strip(); break
+        # Avoid output that is overwhelmingly punctuation/symbol noise.
+        visible=[c for c in text if not c.isspace()]
+        if visible:
+            alnum=sum(c.isalnum() or ('\u3040'<=c<='\u30ff') or ('\u4e00'<=c<='\u9fff') for c in visible)
+            if len(visible)>=12 and alnum/len(visible)<0.35:
+                return ''
+        # Keep the first few coherent sentences rather than a runaway paragraph.
+        text=text.strip(' \t\n')
         return text
 
     def _generate_reply_sync(self,prompt):
@@ -103,11 +110,14 @@ class Bot(discord.Client):
         x=torch.tensor([ids],dtype=torch.long)
         inf=self.cfg.get('inference',{})
         with torch.no_grad():
-            y=self.model.generate(x,max_new_tokens=int(inf.get('max_new_tokens',50)),temperature=float(inf.get('temperature',.6)),top_k=int(inf.get('top_k',30)),repetition_penalty=float(inf.get('repetition_penalty',1.2)),no_repeat_ngram_size=int(inf.get('no_repeat_ngram_size',3)),eos_token_id=self.tok.eos_id)
+            y=self.model.generate(x,max_new_tokens=int(inf.get('max_new_tokens',50)),temperature=float(inf.get('temperature',.55)),top_k=int(inf.get('top_k',24)),repetition_penalty=float(inf.get('repetition_penalty',1.28)),no_repeat_ngram_size=int(inf.get('no_repeat_ngram_size',3)),eos_token_id=self.tok.eos_id)
         return self._clean_reply(self.tok.decode(y[0].tolist()[len(ids):]).strip())
 
     def _fallback(self,a,ex):
-        return ex[0]['response'] if ex and ex[0].get('response') else ('どういう意味？' if a['semantic']=='question' else 'なるほど。')
+        if ex and ex[0].get('response'):
+            return self._clean_reply(ex[0]['response'])
+        # Never use a content-like fixed phrase such as 「なるほど。」 as the normal fallback.
+        return 'もう少し具体的に教えてください。' if a['semantic']=='question' else 'うまく返答を作れませんでした。'
 
     async def on_message(self,m):
         if not self.allowed(m) or m.author.bot: return
