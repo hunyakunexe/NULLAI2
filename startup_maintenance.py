@@ -5,7 +5,7 @@ from pathlib import Path
 from dataset_manager import update_dataset
 from experience_core import ExperienceCore
 
-MODEL_VERSION=4
+MODEL_VERSION=8
 
 def _checkpoint_compatible(ckpt,config,tok_path="data/tokenizer.model"):
     if not ckpt.exists() or not Path(tok_path).exists(): return False

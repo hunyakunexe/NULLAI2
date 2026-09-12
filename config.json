@@ -35,7 +35,9 @@
     "export_confidence": 0.65
   },
   "quality": {
-    "ignore_repeated_messages": true
+    "ignore_repeated_messages": true,
+    "min_reply_chars": 2,
+    "max_sentence_count": 3
   },
   "dataset": {
     "auto_fill": true,
@@ -48,16 +50,26 @@
     "auto_train_on_startup": true,
     "train_every_experiences": 20,
     "log_every_steps": 100,
-    "epochs_per_update": 1
+    "epochs_per_update": 1,
+    "chat_epochs": 5,
+    "pretrain_epochs": 1
   },
   "inference": {
-    "quantized": true,
-    "max_new_tokens": 80,
-    "temperature": 0.48,
-    "top_k": 20,
-    "repetition_penalty": 1.12,
-    "no_repeat_ngram_size": 4
+    "quantized": false,
+    "max_new_tokens": 60,
+    "temperature": 0.42,
+    "top_k": 16,
+    "repetition_penalty": 1.18,
+    "no_repeat_ngram_size": 3
   },
-  "chat_sample_repeat": 8,
-  "seed": 42
+  "chat_sample_repeat": 16,
+  "seed": 42,
+  "social_memory": {
+    "enabled": true,
+    "decay_days": 45,
+    "retention_days": 180,
+    "store_display_names": true,
+    "include_in_prompt": true
+  },
+  "chat_learning_rate": 0.0001
 }

@@ -1,2 +1,2 @@
-DiscordExperienceAI v4
-Generation quality/repetition fixes + Aozora pretraining corpus integrated.
+DiscordExperienceAI v8
+社会記憶 + バグ修正 + 回答自然度改善版
