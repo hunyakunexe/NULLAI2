@@ -1,0 +1,5 @@
+{
+  "type": "sentencepiece",
+  "model": "data/tokenizer.model",
+  "vocab_size": 324
+}
